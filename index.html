@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827"><meta name="description" content="La revue de presse quotidienne, claire et concise.">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml">
+<title>La Revue</title>
+<style>
+:root{color-scheme:dark;--bg:#0d1420;--panel:#151f2e;--muted:#a9b5c6;--ink:#f4f7fb;--line:#29364a;--accent:#9bc5ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:34px 20px 24px;background:linear-gradient(145deg,#182943,#101827);border-bottom:1px solid var(--line)}
+main{max-width:760px;margin:auto;padding:22px 16px 60px}header>div{max-width:760px;margin:auto}
+.kicker{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:clamp(32px,8vw,48px);line-height:1.05;margin:8px 0}header p{color:var(--muted);margin:8px 0 0}
+.meta{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px;margin-bottom:20px}
+section{margin:26px 0}h2{font-size:19px;margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.story{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin:9px 0}
+.story h3{font-size:16px;line-height:1.35;margin:0 0 6px}.story p{margin:0;color:#c3ccda;font-size:14px}.story a{color:var(--accent);text-decoration:none}.source{display:block;color:#8292a8;font-size:12px;margin-top:8px}
+.empty{color:var(--muted);font-size:14px;background:var(--panel);padding:14px;border-radius:12px}
+footer{color:#8190a4;font-size:12px;text-align:center;margin:34px 0 0}
+button{background:#243650;color:white;border:1px solid #3a5272;border-radius:10px;padding:9px 12px;font-weight:600}
+</style></head>
+<body>
+<header><div><div class="kicker">Le point quotidien</div><h1>La Revue</h1><p>Cinq regards pour comprendre l’essentiel de l’actualité.</p></div></header>
+<main><div class="meta"><span id="date">Chargement…</span><button id="refresh">Actualiser</button></div><div id="content"><p class="empty">Chargement de la revue…</p></div><footer>Les informations sont résumées. Ouvre les sources pour lire les articles complets.</footer></main>
+<script>
+const sections=["IA & Tech","Business & marchés","France","Monde","Science"];
+const content=document.getElementById("content");
+function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+async function load(){
+ document.getElementById("date").textContent=new Intl.DateTimeFormat("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());
+ try{
+  const r=await fetch("./data/latest.json?ts="+Date.now()); if(!r.ok) throw Error("Pas de revue publiée");
+  const data=await r.json(); const all=data.sections||{};
+  content.innerHTML=sections.map(name=>{
+   const items=all[name]||[];
+   return '<section><h2>'+esc(name)+'</h2>'+(items.length?items.map(x=>'<article class="story"><h3>'+esc(x.title)+'</h3><p>'+esc(x.summary||"À lire dans la source.")+'</p><span class="source"><a href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.source||"Lire l’article")+' ↗</a></span></article>').join(""):'<p class="empty">Aucune information fiable publiée dans cette rubrique pour le moment.</p>')+'</section>';
+  }).join("");
+ }catch(e){content.innerHTML='<p class="empty">La revue n’a pas encore été générée. Elle apparaîtra ici après la première actualisation automatique.</p>';}
+}
+document.getElementById("refresh").addEventListener("click",load);load();
+if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+</script></body></html>
